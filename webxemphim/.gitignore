@@ -1,0 +1,20 @@
+# OS files
+.DS_Store
+Thumbs.db
+db.db
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Laragon / Web server config
+.htaccess_laragon
+laragon.ini
+
+# Temp / Uploaded movies if you don't want them in git
+# uploads/movies/*
