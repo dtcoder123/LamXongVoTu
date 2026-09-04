@@ -1,4 +1,8 @@
 <?php
+
+/**
+ * ai-chat.php — Trợ lý AI thông minh tích hợp kho dữ liệu STARK-SYS
+ */
 header('Content-Type: application/json; charset=utf-8');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -21,9 +25,39 @@ if ($question === '') {
     exit;
 }
 
-$fallbackAnswer = 'Tôi đang tìm câu trả lời phù hợp cho bạn. Hãy thử hỏi theo kiểu: “gợi ý phim hành động”, “phim khoa học viễn tưởng”, hoặc “đăng nhập”.';
+// 1. KẾT NỐI DATABASE VÀ LẤY TOÀN BỘ KHO PHIM ĐỂ TRỢ LÝ CÓ "BỘ NHỚ"
+require_once __DIR__ . '/includes/db.php';
 
-$prompt = "Bạn là trợ lý AI cho website xem phim FILM.SYS. Hãy trả lời bằng tiếng Việt, ngắn gọn, tự nhiên, thân thiện và đúng ngữ cảnh. Nếu người dùng hỏi về phim, hãy ưu tiên gợi ý phim phù hợp với nhu cầu. Nếu website chưa có loại phim đó, hãy nói rõ sự thật và đề xuất các phim gần nhất trong kho dữ liệu hiện có.\n\nCâu hỏi: {$question}\n\nTrả lời:";
+$moviesList = [];
+try {
+    $stmt = $pdo->query('SELECT id, title, genre, tagline, year, duration, rating FROM movies WHERE status = 1 ORDER BY id DESC');
+    $moviesList = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    // Xử lý nếu lỗi DB
+}
+
+// Tổng hợp danh sách phim thành chuỗi ngắn gọn để đưa vào bộ nhớ của AI
+$movieDatabaseText = "";
+foreach ($moviesList as $m) {
+    $movieDatabaseText .= "- [ID: {$m['id']}] {$m['title']} | Thể loại: {$m['genre']} | Năm: {$m['year']} | Đánh giá: {$m['rating']}★ | Mô tả: {$m['tagline']}\n";
+}
+
+$fallbackAnswer = 'Tôi đang kết nối với hệ thống STARK-SYS. Bạn có thể hỏi tôi về gợi ý phim hành động, hoạt hình, khoa học viễn tưởng, hoặc cách sử dụng website nhé!';
+
+// 2. XÂY DỰNG PROMPT THÔNG MINH VÀ ĐA DỤNG HƠN
+$prompt = "Bạn là FILM-SYS AI, trợ lý ảo cao cấp, thông minh, am hiểu điện ảnh và cực kỳ đáng tin cậy cho website xem phim STARK-SYS.
+Nhiệm vụ của bạn:
+1. Trả lời bằng tiếng Việt, phong cách công nghệ HUD hiện đại, thân thiện, súc tích, tự nhiên.
+2. Nếu người dùng hỏi gợi ý phim, hãy tra cứu trong KHO DỮ LIỆU PHIM bên dưới để chọn đúng các bộ phim đang có sẵn, giới thiệu tên, thể loại và điểm số cho họ. Tuyệt đối không tự bịa ra phim không có trong danh sách.
+3. Nếu kho dữ liệu không có thể loại phim đó, hãy lịch sự thông báo và gợi ý các phim hay nhất gần giống nhất đang có sẵn.
+4. Bạn cũng có thể hướng dẫn người dùng cách đăng nhập, xem thông tin phim, hoặc tìm kiếm trên web.
+
+KHO DỮ LIỆU PHIM HIỆN CÓ TRÊN HỆ THỐNG:
+{$movieDatabaseText}
+
+Câu hỏi của người dùng: {$question}
+
+Trợ lý STARK-SYS trả lời:";
 
 $endpoint = 'https://api-inference.huggingface.co/models/google/gemma-2-2b-it';
 $token = trim((string) getenv('HF_API_TOKEN'));
@@ -65,8 +99,10 @@ if ($answer === '' || $answer === 'null' || $httpCode >= 400) {
     $answer = $fallbackAnswer;
 }
 
+// Làm sạch văn bản trả về từ mô hình AI
 $answer = preg_replace('/\s+/u', ' ', $answer);
-$answer = preg_replace('/^.*?Trả lời\s*:/uis', '', $answer);
+$answer = preg_replace('/^.*?trả lời\s*:/uis', '', $answer);
+$answer = preg_replace('/^.*?Trợ lý FILM-SYS trả lời\s*:/uis', '', $answer);
 $answer = trim($answer);
 
 if ($answer === '') {

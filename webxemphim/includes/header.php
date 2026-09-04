@@ -16,8 +16,8 @@ $isLoggedIn = !empty($_SESSION['user_logged_in']);
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Chakra+Petch:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="css/style.css?v=20260831-restore-old">
-<link rel="stylesheet" href="css/jarvis-hud.css?v=20260831-restore-old">
+<link rel="stylesheet" href="css/style.css?v=20260831-expanded-v2">
+<link rel="stylesheet" href="css/jarvis-hud.css?v=20260831-expanded-v2">
 </head>
 <body>
 <!-- ============ JARVIS BOOT SEQUENCE ============ -->

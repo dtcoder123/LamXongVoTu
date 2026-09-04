@@ -71,6 +71,13 @@ window.movieCatalog = <?php echo json_encode($movieCatalog, JSON_UNESCAPED_UNICO
         </div>
 
         <div class="hero__actions">
+          <?php 
+          // Kiểm tra trạng thái đăng nhập để đổi đường dẫn
+          $watchLink = !empty($_SESSION['user_logged_in']) ? 'watch.php?id=' . $featured['id'] : 'login.php';
+          if (empty($_SESSION['user_logged_in'])) {
+              $_SESSION['flash_message'] = 'Bạn cần đăng nhập để xem phim.';
+          }
+          ?>
           <a href="watch.php?id=<?php echo $featured['id']; ?>" class="btn-hud btn-hud--primary">
             <span class="btn-hud__icon">▶</span> XEM NGAY
           </a>
@@ -165,10 +172,13 @@ window.movieCatalog = <?php echo json_encode($movieCatalog, JSON_UNESCAPED_UNICO
       <?php endforeach; ?>
     </div>
 
-    <div class="load-more-wrap">
-      <button class="btn-hud btn-hud--ghost btn-hud--wide" id="loadMoreBtn">TẢI THÊM DỮ LIỆU ⌄</button>
-    </div>
+    
   </section>
+  <div class="container" style="text-align: center; margin-top: 90px; margin-bottom: 50px; clear: both; width: 100%;">
+    <button class="btn-hud btn-hud--ghost btn-hud--wide" id="loadMoreBtn" style="display: inline-block; margin: 0 auto;">
+      TẢI THÊM DỮ LIỆU ⌄
+    </button>
+  </div>
 
 </main>
 
