@@ -25,6 +25,12 @@ foreach ($movies as &$movie) {
 }
 unset($movie);
 
+$movieShelves = [];
+foreach ($movies as $movie) {
+  $shelfGenre = trim((string)($movie['genre'] ?? '')) ?: 'Khác';
+  $movieShelves[$shelfGenre][] = $movie;
+}
+
 $movieCatalog = array_map(function ($movie) {
     return [
         'id' => (int)($movie['id'] ?? 0),
@@ -71,6 +77,13 @@ window.movieCatalog = <?php echo json_encode($movieCatalog, JSON_UNESCAPED_UNICO
         </div>
 
         <div class="hero__actions">
+          <?php 
+          // Kiểm tra trạng thái đăng nhập để đổi đường dẫn
+          $watchLink = !empty($_SESSION['user_logged_in']) ? 'watch.php?id=' . $featured['id'] : 'login.php';
+          if (empty($_SESSION['user_logged_in'])) {
+              $_SESSION['flash_message'] = 'Bạn cần đăng nhập để xem phim.';
+          }
+          ?>
           <a href="watch.php?id=<?php echo $featured['id']; ?>" class="btn-hud btn-hud--primary">
             <span class="btn-hud__icon">▶</span> XEM NGAY
           </a>
@@ -129,46 +142,53 @@ window.movieCatalog = <?php echo json_encode($movieCatalog, JSON_UNESCAPED_UNICO
       <span class="section-heading__count"><?php echo count($movies); ?> ENTRIES FOUND</span>
     </div>
 
-    <div class="movie-grid" id="movieGrid">
-      <?php foreach ($movies as $m): ?>
-        <a href="watch.php?id=<?php echo $m['id']; ?>" class="movie-card" data-id="<?php echo (int)$m['id']; ?>" data-title="<?php echo htmlspecialchars($m['title']); ?>" data-genre="<?php echo htmlspecialchars($m['genre']); ?>" data-tagline="<?php echo htmlspecialchars($m['tagline']); ?>" data-keywords="<?php echo htmlspecialchars(strtolower($m['title'] . ' ' . $m['genre'] . ' ' . $m['tagline'] . ' ' . implode(' ', $m['cast']))); ?>">
-          <div class="movie-card__frame">
-            <div class="hud-corner hud-corner--tl"></div>
-            <div class="hud-corner hud-corner--br"></div>
-
-            <?php if (!empty($m['hot'])): ?>
-              <span class="movie-card__badge">HOT</span>
-            <?php endif; ?>
-
-            <img src="<?php echo $m['poster']; ?>" alt="<?php echo htmlspecialchars($m['title']); ?>" class="movie-card__img" loading="lazy">
-
-            <div class="movie-card__overlay">
-              <span class="movie-card__play">▶</span>
-            </div>
+    <div class="movie-shelves" id="movieGrid">
+      <?php foreach ($movieShelves as $shelfGenre => $shelfMovies): ?>
+        <section class="movie-shelf">
+          <div class="movie-shelf__intro">
+            <h3 class="movie-shelf__title"><?php echo htmlspecialchars($shelfGenre); ?></h3>
+            <a href="#grid" class="movie-shelf__link">Xem toàn bộ <span aria-hidden="true">›</span></a>
           </div>
 
-          <div class="movie-card__body">
-            <h3 class="movie-card__title"><?php echo htmlspecialchars($m['title']); ?></h3>
-            <div class="movie-card__meta">
-              <span><?php echo htmlspecialchars($m['genre']); ?></span>
-              <span>·</span>
-              <span><?php echo $m['year']; ?></span>
-            </div>
-            <div class="rating-bar">
-              <div class="rating-bar__track">
-                <div class="rating-bar__fill" style="width:<?php echo $m['rating'] * 10; ?>%"></div>
-              </div>
-              <span class="rating-bar__value"><?php echo $m['rating']; ?></span>
-            </div>
+          <div class="movie-shelf__track">
+            <?php foreach ($shelfMovies as $m): ?>
+              <a href="watch.php?id=<?php echo $m['id']; ?>" class="movie-card" data-id="<?php echo (int)$m['id']; ?>" data-title="<?php echo htmlspecialchars($m['title']); ?>" data-genre="<?php echo htmlspecialchars($m['genre']); ?>" data-tagline="<?php echo htmlspecialchars($m['tagline']); ?>" data-keywords="<?php echo htmlspecialchars(strtolower($m['title'] . ' ' . $m['genre'] . ' ' . $m['tagline'] . ' ' . implode(' ', $m['cast']))); ?>">
+                <div class="movie-card__frame">
+                  <div class="hud-corner hud-corner--tl"></div>
+                  <div class="hud-corner hud-corner--br"></div>
+
+                  <?php if (!empty($m['hot'])): ?>
+                    <span class="movie-card__badge">HOT</span>
+                  <?php endif; ?>
+
+                  <img src="<?php echo $m['poster']; ?>" alt="<?php echo htmlspecialchars($m['title']); ?>" class="movie-card__img" loading="lazy">
+
+                  <div class="movie-card__overlay">
+                    <span class="movie-card__play">▶</span>
+                  </div>
+                </div>
+
+                <div class="movie-card__body">
+                  <h3 class="movie-card__title"><?php echo htmlspecialchars($m['title']); ?></h3>
+                  <div class="movie-card__meta">
+                    <span><?php echo htmlspecialchars($m['tagline']); ?></span>
+                  </div>
+                </div>
+              </a>
+            <?php endforeach; ?>
           </div>
-        </a>
+          <button class="movie-shelf__next" type="button" aria-label="Xem thêm phim">›</button>
+        </section>
       <?php endforeach; ?>
     </div>
 
-    <div class="load-more-wrap">
-      <button class="btn-hud btn-hud--ghost btn-hud--wide" id="loadMoreBtn">TẢI THÊM DỮ LIỆU ⌄</button>
-    </div>
+    
   </section>
+  <div class="container" style="text-align: center; margin-top: 90px; margin-bottom: 50px; clear: both; width: 100%;">
+    <button class="btn-hud btn-hud--ghost btn-hud--wide" id="loadMoreBtn" style="display: inline-block; margin: 0 auto;">
+      TẢI THÊM DỮ LIỆU ⌄
+    </button>
+  </div>
 
 </main>
 

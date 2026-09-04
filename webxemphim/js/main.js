@@ -238,6 +238,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (matches) visibleCount += 1;
     });
 
+    movieGrid.querySelectorAll('.movie-shelf').forEach((shelf) => {
+      const hasVisibleCard = [...shelf.querySelectorAll('.movie-card')]
+        .some((card) => card.style.display !== 'none');
+      shelf.style.display = hasVisibleCard ? '' : 'none';
+    });
+
     const countEl = document.querySelector('.section-heading__count');
     if (countEl) {
       countEl.textContent = `${visibleCount} ENTRIES FOUND`;
@@ -306,6 +312,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     applyMovieFilters();
   }
+
+  movieGrid?.querySelectorAll('.movie-shelf__next').forEach((button) => {
+    button.addEventListener('click', () => {
+      button.previousElementSibling?.scrollBy({ left: 280, behavior: 'smooth' });
+    });
+  });
 
   /* ---------- Load more (mock — reveals a status message) ---------- */
   const loadMoreBtn = document.getElementById('loadMoreBtn');
@@ -529,215 +541,131 @@ document.addEventListener('DOMContentLoaded', () => {
     moviePlayer.dataset.playing = 'false';
   }
 
-  /* ---------- AI assistant widget ---------- */
-  const assistantWidget = document.querySelector('.assistant-widget');
-  const assistantToggle = document.querySelector('.assistant-widget__toggle');
-  const assistantMessages = document.querySelector('.assistant-widget__messages');
-  const assistantForm = document.querySelector('.assistant-widget__composer');
-  const assistantInput = document.querySelector('#assistantInput');
-  const assistantQuickButtons = document.querySelectorAll('.assistant-quick-btn');
+  /* ---------- AI Chatbox ---------- */
+  const aiLauncher = document.getElementById('aiChatLauncher');
+  const aiChatbox = document.getElementById('aiChatbox');
+  const aiChatClose = document.getElementById('aiChatClose');
+  const aiChatMessages = document.getElementById('aiChatMessages');
+  const aiChatForm = document.getElementById('aiChatForm');
+  const aiChatInput = document.getElementById('aiChatInput');
+  const aiConversation = [];
 
-  const buildAssistantSuggestionLinks = (items = []) => {
-    if (!items.length) return null;
-
-    const wrapper = document.createElement('div');
-    wrapper.className = 'assistant-suggestions';
-
-    items.slice(0, 4).forEach((movie) => {
-      const link = document.createElement('a');
-      link.href = `watch.php?id=${movie.id}`;
-      link.className = 'assistant-suggestion';
-      link.textContent = movie.title;
-      link.title = movie.title;
-      wrapper.appendChild(link);
-    });
-
-    return wrapper;
+  const scrollAiChat = () => {
+    if (aiChatMessages) aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
   };
 
-  const addAssistantMessage = (text, type = 'bot', suggestions = []) => {
-    if (!assistantMessages) return;
-    const item = document.createElement('div');
-    item.className = `assistant-message assistant-message--${type}`;
+  const addAiMessage = (text, role = 'assistant', movies = []) => {
+    if (!aiChatMessages) return;
+    const message = document.createElement('div');
+    message.className = `ai-chat-message ai-chat-message--${role}`;
 
-    const textNode = document.createElement('div');
-    textNode.className = 'assistant-message__text';
-    textNode.textContent = text;
-    item.appendChild(textNode);
+    const avatar = document.createElement('span');
+    avatar.className = 'ai-chat-message__avatar';
+    avatar.textContent = role === 'assistant' ? '✦' : '●';
 
-    const suggestionsNode = buildAssistantSuggestionLinks(suggestions);
-    if (suggestionsNode) {
-      item.appendChild(suggestionsNode);
-    }
+    const content = document.createElement('div');
+    const paragraph = document.createElement('p');
+    paragraph.textContent = text;
+    content.appendChild(paragraph);
 
-    assistantMessages.appendChild(item);
-    assistantMessages.scrollTop = assistantMessages.scrollHeight;
-  };
+    if (movies.length && role === 'assistant') {
+      const movieList = document.createElement('div');
+      movieList.className = 'ai-chat-movie-list';
+      movies.forEach((movie) => {
+        const card = document.createElement('div');
+        card.className = 'ai-chat-movie';
 
-  const fallbackAssistantLogic = (question) => {
-    const raw = String(question || '').trim();
-    if (!raw) {
-      return { text: 'Bạn có thể hỏi tôi gợi ý phim, thể loại yêu thích, hoặc hướng dẫn truy cập hệ thống.', suggestions: [] };
-    }
+        const image = document.createElement('img');
+        image.src = movie.poster || '';
+        image.alt = movie.title || 'Phim';
 
-    const q = normalizeFilterText(raw);
-    const catalog = (() => {
-      if (Array.isArray(window.movieCatalog) && window.movieCatalog.length) return window.movieCatalog;
-      return [...document.querySelectorAll('.movie-card')].map((card) => ({
-        id: Number(card.dataset.id || 0),
-        title: card.dataset.title || '',
-        genre: card.dataset.genre || '',
-        tagline: card.dataset.tagline || '',
-        rating: Number(card.querySelector('.rating-bar__value')?.textContent || 0),
-        keywords: `${card.dataset.title || ''} ${card.dataset.genre || ''} ${card.dataset.tagline || ''} ${card.dataset.keywords || ''}`
-      }));
-    })();
+        const info = document.createElement('div');
+        info.className = 'ai-chat-movie__info';
+        const title = document.createElement('strong');
+        title.textContent = movie.title || 'Phim';
+        const meta = document.createElement('small');
+        meta.textContent = `${movie.genre || 'Chưa có thể loại'} · ${movie.year || 'N/A'} · ★ ${movie.rating || 'N/A'}`;
+        info.append(title, meta);
 
-    const normalizeMatchText = (value) => normalizeFilterText(value || '');
-    const genreMap = [
-      { key: 'romance', patterns: ['tinh cam', 'tinhcam', 'love', 'romance', 'romantic', 'lang man', 'lãng mạn'], label: 'Tình cảm' },
-      { key: 'action', patterns: ['hanh dong', 'hanh-dong', 'action', 'chien dau', 'combat', 'punch'], label: 'Hành động' },
-      { key: 'scifi', patterns: ['khoa hoc vien tuong', 'khoa hoc vien-tuong', 'vien tuong', 'viễn tưởng', 'scifi', 'sci fi', 'science fiction'], label: 'Khoa học viễn tưởng' },
-      { key: 'horror', patterns: ['kinh di', 'kinh-di', 'horror', 'so hai', 'sợ hãi'], label: 'Kinh dị' },
-      { key: 'animation', patterns: ['hoat hinh', 'animation', 'anime', 'cartoon'], label: 'Hoạt hình' }
-    ];
-
-    const detectGenre = () => {
-      for (const entry of genreMap) {
-        if (entry.patterns.some((pattern) => q.includes(pattern))) {
-          return entry;
-        }
-      }
-      return null;
-    };
-
-    const hasAnyPhrase = (phrases, text) => {
-      const pattern = phrases
-        .map((phrase) => phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-        .join('|');
-      return new RegExp(`(?:^|\\s)(?:${pattern})(?=\\s|$)`, 'i').test(text);
-    };
-
-    if (hasAnyPhrase(['dang nhap', 'login'], q)) {
-      return { text: 'Bạn có thể dùng nút ĐĂNG NHẬP ở góc trên cùng của website để truy cập tài khoản.', suggestions: [] };
-    }
-
-    if (hasAnyPhrase(['dang ky', 'register'], q)) {
-      return { text: 'Bạn có thể bấm nút ĐĂNG KÝ trong header để tạo tài khoản mới.', suggestions: [] };
-    }
-
-    if (hasAnyPhrase(['xin chao', 'hello', 'hi', 'chao', 'hey'], q)) {
-      return { text: 'Xin chào! Tôi là trợ lý JARVIS của FILM.SYS. Tôi có thể gợi ý phim, giới thiệu thể loại và giúp bạn điều hướng nhanh hơn.', suggestions: [] };
-    }
-
-    if (hasAnyPhrase(['cam on', 'thanks'], q)) {
-      return { text: 'Không có gì! Tôi luôn sẵn sàng hỗ trợ bạn.', suggestions: [] };
-    }
-
-    const exactMovieMatch = catalog.find((movie) => {
-      const titleText = normalizeMatchText(movie.title);
-      const haystack = normalizeMatchText(`${movie.title} ${movie.genre} ${movie.tagline} ${movie.keywords}`);
-      const titleIsExact = titleText === q || q.includes(titleText) || titleText.includes(q);
-      const isInMetadata = haystack.includes(q) || q.includes(haystack);
-      return titleIsExact || isInMetadata;
-    });
-
-    if (exactMovieMatch) {
-      return {
-        text: `Tôi tìm thấy phim: ${exactMovieMatch.title}. Đây là phim thuộc thể loại ${exactMovieMatch.genre || 'chưa cập nhật'}.`,
-        suggestions: [exactMovieMatch]
-      };
-    }
-
-    const buildMissingCatalogMessage = (label) => {
-      const cleaned = normalizeMatchText(label)
-        .replace(/^phim\s+/, '')
-        .replace(/^movie\s+/, '')
-        .trim();
-      return `Hiện tại website chưa có phim ${cleaned || 'yêu cầu'} trong kho dữ liệu.`;
-    };
-
-    const genre = detectGenre();
-    if (genre) {
-      const matching = catalog.filter((movie) => {
-        const text = normalizeMatchText(`${movie.title} ${movie.genre} ${movie.tagline} ${movie.keywords}`);
-        return text.includes(normalizeMatchText(genre.label));
+        const link = document.createElement('a');
+        link.className = 'ai-chat-movie__link';
+        link.href = movie.watch_url || `watch.php?id=${Number(movie.id || 0)}`;
+        link.textContent = 'Xem';
+        card.append(image, info, link);
+        movieList.appendChild(card);
       });
-
-      if (matching.length) {
-        return { text: `Hiện có các phim thuộc thể loại ${genre.label}:`, suggestions: matching.slice(0, 4) };
-      }
-
-      return { text: buildMissingCatalogMessage(genre.label), suggestions: [] };
+      content.appendChild(movieList);
     }
 
-    const isMissingCatalogRequest = /(?:^|\s)(?:phim|movie|the loai)(?:\s+|$)/.test(q) || /(?:^|\s)(?:phim|movie|the loai)\s+.+/.test(q);
-    if (isMissingCatalogRequest) {
-      const detail = normalizeMatchText(raw)
-        .replace(/^(?:phim|movie)\s+/, '')
-        .replace(/^the loai\s+/, '')
-        .replace(/^gợi ý\s+/, '')
-        .trim();
-      return { text: buildMissingCatalogMessage(detail || 'yêu cầu'), suggestions: [] };
-    }
-
-    const isWebsiteTopic = /(dang nhap|login|dang ky|register|xin chao|hello|hi|cam on|thanks|goi y|de xuat|gợi ý|phim|the loai|genre|movie|xem phim|watch)/.test(q);
-    if (!isWebsiteTopic) {
-      return { text: 'Tôi chỉ hỗ trợ về phim, thể loại phim và đăng nhập trên website này.', suggestions: [] };
-    }
-
-    const wantsGenericRecommendation = /(?:^|\s)(?:goi y|de xuat|gợi ý|recommend|suggest|phim hay|phim nao hay|phim gì hay|phim nào hay)(?:\s|$)/.test(q);
-    if (wantsGenericRecommendation) {
-      const top = catalog.slice().sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0)).slice(0, 4);
-      if (!top.length) {
-        return { text: 'Hiện tại kho phim đang trống, bạn có thể thử tìm theo thể loại khác.', suggestions: [] };
-      }
-      return { text: 'Dưới đây là các phim đang có trên website mà bạn có thể xem ngay:', suggestions: top };
-    }
-
-    return { text: 'Tôi hiểu ý bạn, nhưng tôi chỉ hỗ trợ về phim, thể loại phim và đăng nhập trên website này.', suggestions: [] };
+    message.append(avatar, content);
+    aiChatMessages.appendChild(message);
+    scrollAiChat();
   };
 
-  const answerAssistantRequest = async (question) => {
-    const q = String(question || '').trim();
-    if (!q) {
-      return { text: 'Bạn có thể hỏi tôi gợi ý phim, thể loại hoặc hướng dẫn truy cập hệ thống.', suggestions: [] };
-    }
+  const setAiLoading = (loading) => {
+    const current = document.getElementById('aiChatLoading');
+    if (current) current.remove();
+    if (!loading || !aiChatMessages) return;
 
-    return fallbackAssistantLogic(q);
+    const item = document.createElement('div');
+    item.id = 'aiChatLoading';
+    item.className = 'ai-chat-message ai-chat-message--assistant';
+    item.innerHTML = '<span class="ai-chat-message__avatar">✦</span><p class="ai-chat-message__typing">AI ĐANG SUY NGHĨ...</p>';
+    aiChatMessages.appendChild(item);
+    scrollAiChat();
   };
 
-  if (assistantToggle && assistantWidget) {
-    assistantToggle.addEventListener('click', () => {
-      assistantWidget.classList.toggle('is-collapsed');
-      assistantToggle.textContent = assistantWidget.classList.contains('is-collapsed') ? '+' : '—';
+  const submitAiMessage = async (value) => {
+    const message = String(value || '').trim();
+    if (!message || !aiChatInput) return;
+
+    addAiMessage(message, 'user');
+    aiConversation.push({ role: 'user', content: message });
+    aiChatInput.value = '';
+    setAiLoading(true);
+
+    try {
+      const response = await fetch('api/ai_chat.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, messages: aiConversation.slice(-8) })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || 'AI hiện chưa sẵn sàng.');
+
+      aiConversation.push({ role: 'assistant', content: payload.answer || '' });
+      setAiLoading(false);
+      addAiMessage(payload.answer || 'Mình chưa nhận được câu trả lời phù hợp.', 'assistant', payload.movies || []);
+    } catch (error) {
+      setAiLoading(false);
+      addAiMessage(error.message || 'Không thể kết nối AI lúc này.', 'assistant');
+    }
+  };
+
+  if (aiLauncher && aiChatbox) {
+    aiLauncher.addEventListener('click', () => {
+      const isOpen = aiChatbox.classList.toggle('is-open');
+      aiChatbox.setAttribute('aria-hidden', String(!isOpen));
+      if (isOpen) aiChatInput?.focus();
     });
   }
-
-  assistantQuickButtons.forEach((button) => {
-    button.addEventListener('click', async () => {
-      const text = button.textContent.trim();
-      if (assistantInput) assistantInput.value = text;
-      addAssistantMessage(text, 'user');
-      const reply = await answerAssistantRequest(text);
-      addAssistantMessage(reply.text, 'bot', reply.suggestions || []);
-    });
+  aiChatClose?.addEventListener('click', () => {
+    aiChatbox?.classList.remove('is-open');
+    aiChatbox?.setAttribute('aria-hidden', 'true');
   });
-
-  if (assistantForm) {
-    assistantForm.addEventListener('submit', async (event) => {
+  aiChatForm?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    submitAiMessage(aiChatInput?.value || '');
+  });
+  aiChatInput?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
-      if (!assistantInput) return;
-
-      const value = assistantInput.value.trim();
-      if (!value) return;
-
-      addAssistantMessage(value, 'user');
-      const reply = await answerAssistantRequest(value);
-      addAssistantMessage(reply.text, 'bot', reply.suggestions || []);
-      assistantInput.value = '';
-    });
-  }
+      aiChatForm?.requestSubmit();
+    }
+  });
+  document.querySelectorAll('[data-ai-prompt]').forEach((button) => {
+    button.addEventListener('click', () => submitAiMessage(button.dataset.aiPrompt || ''));
+  });
 
   syncPlayerUi();
 

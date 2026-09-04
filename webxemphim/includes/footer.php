@@ -2,33 +2,35 @@
 // includes/footer.php
 ?>
 
-<aside class="assistant-widget" aria-live="polite">
-  <div class="assistant-widget__header">
-    <div class="assistant-widget__status">
-      <span class="assistant-widget__dot"></span>
-      <span>AI Assistant</span>
+<button class="ai-chat-launcher" id="aiChatLauncher" type="button" aria-label="Mở AI Chatbox">
+  <span class="ai-chat-launcher__pulse"></span>
+  <span class="ai-chat-launcher__icon">✦</span>
+  <span class="ai-chat-launcher__label">AI CHAT</span>
+</button>
+
+<aside class="ai-chatbox" id="aiChatbox" aria-label="AI Chatbox" aria-hidden="true">
+  <div class="ai-chatbox__header">
+    <div>
+      <span class="ai-chatbox__eyebrow">FILM.SYS // INTELLIGENCE</span>
+      <h2>AI Chatbox</h2>
     </div>
-    <button class="assistant-widget__toggle" type="button" aria-label="Mở / đóng trợ lý">—</button>
+    <button class="ai-chatbox__close" id="aiChatClose" type="button" aria-label="Đóng AI Chatbox">×</button>
   </div>
-
-  <div class="assistant-widget__body">
-    <div class="assistant-widget__messages">
-      <div class="assistant-message assistant-message--bot">
-        Xin chào! Tôi là trợ lý JARVIS của FILM.SYS. Tôi có thể gợi ý phim, trả lời câu hỏi và hỗ trợ bạn tìm nội dung trên website.
-      </div>
+  <div class="ai-chatbox__messages" id="aiChatMessages" aria-live="polite">
+    <div class="ai-chat-message ai-chat-message--assistant">
+      <span class="ai-chat-message__avatar">✦</span>
+      <p>Mình có thể tìm phim, tra thể loại, diễn viên, đạo diễn và thông tin đang có trong kho phim.</p>
     </div>
-
-    <div class="assistant-widget__quick-actions">
-      <button type="button" class="assistant-quick-btn">Gợi ý phim</button>
-      <button type="button" class="assistant-quick-btn">Phim hành động</button>
-      <button type="button" class="assistant-quick-btn">Đăng nhập</button>
-    </div>
-
-    <form class="assistant-widget__composer" autocomplete="off">
-      <input type="text" id="assistantInput" placeholder="Nhập câu hỏi của bạn..." aria-label="Nhập câu hỏi cho trợ lý" />
-      <button type="submit" aria-label="Gửi câu hỏi">➤</button>
-    </form>
   </div>
+  <div class="ai-chatbox__quick-actions">
+    <button type="button" data-ai-prompt="Gợi ý cho tôi vài phim hay trong kho phim">Gợi ý phim</button>
+    <button type="button" data-ai-prompt="Tìm phim theo thể loại hành động">Phim hành động</button>
+    <button type="button" data-ai-prompt="Phim nào đang nổi bật trên website?">Phim nổi bật</button>
+  </div>
+  <form class="ai-chatbox__form" id="aiChatForm">
+    <textarea id="aiChatInput" rows="1" maxlength="2000" placeholder="Hỏi về phim trong website..." aria-label="Nhập câu hỏi"></textarea>
+    <button type="submit" aria-label="Gửi tin nhắn">➤</button>
+  </form>
 </aside>
 
 <footer class="site-footer hud-panel">
@@ -81,7 +83,7 @@
   </div>
 </footer>
 
-<script src="js/main.js?v=20260830-hero-switcher-verify"></script>
+<script src="js/main.js?v=20260905-ai-chat"></script>
 </body>
 
 </html>
