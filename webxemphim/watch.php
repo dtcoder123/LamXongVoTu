@@ -96,6 +96,12 @@ if (!$movie) {
   $id = (int)($movie['id'] ?? 1);
 }
 
+$historyStmt = $pdo->prepare('INSERT INTO watch_history (user_id, movie_id, watched_at) VALUES (:user_id, :movie_id, NOW()) ON DUPLICATE KEY UPDATE watched_at = NOW()');
+$historyStmt->execute([
+  ':user_id' => (int)$_SESSION['user_id'],
+  ':movie_id' => $id,
+]);
+
 $movie['cast'] = normalizeMovieCast($movie['cast'] ?? []);
 $movie['video_url'] = trim((string)($movie['video_url'] ?? $movie['trailer_url'] ?? ''));
 if ($movie['video_url'] === '') {
