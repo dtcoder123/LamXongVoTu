@@ -75,6 +75,17 @@ try {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
+    $pdo->exec("CREATE TABLE IF NOT EXISTS movie_comments (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        movie_id INT NOT NULL,
+        user_id INT NOT NULL,
+        rating TINYINT NOT NULL DEFAULT 5,
+        comment TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX (movie_id),
+        INDEX (user_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
     $adminCheck = $pdo->prepare('SELECT id FROM users WHERE email = :email OR username = :username LIMIT 1');
     $adminCheck->execute([
         ':email' => 'admin@gmail.com',
